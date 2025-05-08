@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <title>DocuSage - PDF Q&A Bot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body class="text-white min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <header class="bg-white/10 backdrop-blur sticky top-0 z-50">
+    <nav class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+      <h1 class="text-2xl font-bold">📄 DocuSage</h1>
+      <div class="space-x-4 text-sm font-medium">
+        <a href="#home" class="hover:underline">Home</a>
+        <a href="#chatbot" class="hover:underline">Try It</a>
+        <a href="#about" class="hover:underline">About</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Hero Section -->
+  <section id="home" class="flex flex-1 items-center justify-center text-center px-6 py-20">
+    <div>
+      <h2 class="text-5xl font-extrabold mb-4">Your Smart PDF Assistant</h2>
+      <p class="text-lg max-w-xl mx-auto mb-6">Upload any PDF — research papers, contracts, notes — and ask questions. Get instant, smart answers powered by AI.</p>
+      <a href="#chatbot" class="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-xl font-semibold text-white transition-all">🚀 Try Now</a>
+    </div>
+  </section>
+
+  <!-- Chatbot Section -->
+  <section id="chatbot" class="flex justify-center p-6">
+    <div class="backdrop-blur-md bg-white/20 rounded-3xl p-6 max-w-xl w-full shadow-2xl">
+      <div class="text-center mb-6">
+        <h3 class="text-3xl font-extrabold">Chat with Your PDF</h3>
+        <p class="text-sm mt-1">Upload and interact intelligently.</p>
+      </div>
+
+      <form id="uploadForm" class="bg-white/10 rounded-xl p-4 mb-4">
+        <label class="block text-sm mb-2 font-semibold">Upload PDF</label>
+        <input type="file" name="file" class="w-full mb-3 rounded bg-white/80 p-2 text-black" required>
+        <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 transition-all duration-200 text-white px-4 py-2 rounded-xl font-semibold">
+          📤 Upload PDF
+        </button>
+      </form>
+
+      <div id="chat" class="bg-white/10 rounded-xl p-4 h-80 overflow-y-auto space-y-2 mb-4 transition-all duration-300 scroll-smooth"></div>
+
+      <form id="askForm" class="flex gap-2">
+        <input id="question" type="text" class="flex-1 p-2 rounded-xl text-black" placeholder="Ask something..." required>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 transition-all duration-200 text-white px-4 py-2 rounded-xl font-semibold">
+          💬 Ask
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="text-center px-6 py-12 bg-white/10 backdrop-blur-md mt-10">
+    <h4 class="text-3xl font-bold mb-4">How It Works</h4>
+    <p class="max-w-3xl mx-auto text-md mb-6">DocuSage reads your PDF using AI, converts it to searchable text, and intelligently answers your questions. Ideal for students, legal teams, and researchers.</p>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto text-left">
+      <div class="bg-white/10 p-4 rounded-xl shadow">
+        <h5 class="font-semibold mb-1">📄 Upload</h5>
+        <p>Select your PDF. We’ll handle the rest.</p>
+      </div>
+      <div class="bg-white/10 p-4 rounded-xl shadow">
+        <h5 class="font-semibold mb-1">🤖 Ask</h5>
+        <p>Ask any question, from simple facts to deep context.</p>
+      </div>
+      <div class="bg-white/10 p-4 rounded-xl shadow">
+        <h5 class="font-semibold mb-1">⚡ Get Answers</h5>
+        <p>Receive quick, context-aware answers with sources.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="mt-auto bg-white/10 text-center py-4 text-sm text-white/80">
+    &copy; 2025 DocuSage. Made with ❤️ and AI.
+  </footer>
+
+  <script>
+    const uploadForm = document.getElementById('uploadForm');
+    const askForm = document.getElementById('askForm');
+    const chat = document.getElementById('chat');
+    const questionInput = document.getElementById('question');
+
+    function appendMessage(sender, message) {
+      const bubble = document.createElement('div');
+      bubble.className = `p-3 rounded-xl max-w-[75%] w-fit break-words animate-fadeIn ${
+        sender === "user"
+          ? "bg-blue-200 text-black self-end ml-auto"
+          : "bg-purple-200 text-black self-start mr-auto"
+      }`;
+      bubble.innerText = message;
+      chat.appendChild(bubble);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function appendLoadingBubble() {
+      const bubble = document.createElement('div');
+      bubble.className = "bg-purple-200 text-black p-3 rounded-xl self-start animate-pulse max-w-[75%]";
+      bubble.innerText = "Thinking...";
+      bubble.id = "loading-bubble";
+      chat.appendChild(bubble);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function removeLoadingBubble() {
+      const bubble = document.getElementById("loading-bubble");
+      if (bubble) chat.removeChild(bubble);
+    }
+
+    uploadForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(uploadForm);
+      const button = uploadForm.querySelector("button");
+      button.disabled = true;
+      button.innerText = "Uploading...";
+      try {
+        const res = await axios.post('http://localhost:5000/upload', formData);
+        alert(res.data.message);
+      } catch (err) {
+        alert("Upload failed. Try again.");
+      }
+      button.disabled = false;
+      button.innerText = "📤 Upload PDF";
+    });
+
+    askForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const question = questionInput.value.trim();
+      if (!question) return;
+      appendMessage("user", question);
+      questionInput.value = "";
+
+      appendLoadingBubble();
+      try {
+        const res = await axios.post('http://localhost:5000/ask', { question });
+        removeLoadingBubble();
+
+        const answer = res.data.answer;
+        const sources = res.data.sources || [];
+
+        let message = answer;
+        if (sources.length > 0) {
+          message += "\n\n📄 *Sources:*\n" + sources.map(s => `- ${s}`).join("\n");
+        }
+
+        appendMessage("bot", message);
+      } catch (err) {
+        removeLoadingBubble();
+        appendMessage("bot", "⚠️ Sorry, something went wrong.");
+      }
+    });
+  </script>
+
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.3s ease-out;
+    }
+  </style>
+</body>
+</html>
